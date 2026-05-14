@@ -246,7 +246,7 @@ function StartGPS()
 
                 maximumAge: 0,
 
-                timeout: 100
+                timeout: 1000
             }
         );
 }
@@ -264,8 +264,11 @@ async function OnGPS(position)
     const accuracy =
         position.coords.accuracy;
 
-    const speed =
+    const speedMS =
         position.coords.speed || 0;
+
+    const speedKMH =
+        speedMS * 3.6;
 
     const timestamp =
         Date.now();
@@ -281,8 +284,8 @@ async function OnGPS(position)
     accuracyEl.innerText =
         accuracy.toFixed(2) + "m";
 
-    speedEl.innerText =
-        speed.toFixed(2) + " m/s";
+speedEl.innerText =
+    speedKMH.toFixed(1) + " km/h";
 
     timestampEl.innerText =
         new Date(timestamp)
@@ -303,7 +306,7 @@ async function OnGPS(position)
                 latitude: lat,
                 longitude: lon,
                 accuracy: accuracy,
-                speed: speed,
+                speed: speedKMH,
                 timestamp: timestamp
             }
         );
