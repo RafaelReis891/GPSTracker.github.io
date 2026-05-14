@@ -1,1 +1,333 @@
-Status: Erro GPS: Geolocation has been disabled in this document by permissions policy.
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+/>
+
+<title>GPS Sender</title>
+
+<style>
+body
+{
+    margin: 0;
+    padding: 0;
+
+    background: #111;
+    color: white;
+
+    font-family: Arial, sans-serif;
+}
+
+.container
+{
+    max-width: 500px;
+
+    margin: auto;
+
+    padding: 20px;
+}
+
+.card
+{
+    background: #222;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+}
+
+.card div
+{
+    margin-bottom: 10px;
+}
+
+button
+{
+    width: 100%;
+
+    padding: 16px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #00c853;
+
+    color: white;
+
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+button:hover
+{
+    opacity: 0.9;
+}
+
+.small
+{
+    opacity: 0.7;
+
+    font-size: 13px;
+
+    margin-top: 15px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <h1>GPS Sender</h1>
+
+    <div class="card">
+
+        <div>
+            <strong>Status:</strong>
+            <span id="status">
+                Aguardando...
+            </span>
+        </div>
+
+        <div>
+            <strong>Latitude:</strong>
+            <span id="lat">
+                0
+            </span>
+        </div>
+
+        <div>
+            <strong>Longitude:</strong>
+            <span id="lon">
+                0
+            </span>
+        </div>
+
+        <div>
+            <strong>Precisão:</strong>
+            <span id="accuracy">
+                0
+            </span>
+        </div>
+
+        <div>
+            <strong>Velocidade:</strong>
+            <span id="speed">
+                0
+            </span>
+        </div>
+
+        <div>
+            <strong>Último envio:</strong>
+            <span id="timestamp">
+                -
+            </span>
+        </div>
+
+    </div>
+
+    <button id="startBtn">
+        Iniciar GPS
+    </button>
+
+    <div class="small">
+        Mantenha a tela ligada para melhor precisão.
+    </div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getDatabase,
+    ref,
+    set
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ============================================
+// FIREBASE CONFIG
+// ============================================
+// TROQUE PELOS DADOS REAIS
+// ============================================
+
+const firebaseConfig =
+{
+    apiKey: "COLOQUE_AQUI",
+    authDomain: "COLOQUE_AQUI",
+    databaseURL:
+        "https://cardapiodigital-f413d-default-rtdb.firebaseio.com/",
+
+    projectId: "COLOQUE_AQUI",
+
+    storageBucket: "COLOQUE_AQUI",
+
+    messagingSenderId: "COLOQUE_AQUI",
+
+    appId: "COLOQUE_AQUI"
+};
+
+// ============================================
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getDatabase(app);
+
+// ============================================
+// HTML
+// ============================================
+
+const statusEl =
+    document.getElementById("status");
+
+const latEl =
+    document.getElementById("lat");
+
+const lonEl =
+    document.getElementById("lon");
+
+const accuracyEl =
+    document.getElementById("accuracy");
+
+const speedEl =
+    document.getElementById("speed");
+
+const timestampEl =
+    document.getElementById("timestamp");
+
+const startBtn =
+    document.getElementById("startBtn");
+
+// ============================================
+
+let watchId = null;
+
+// ============================================
+
+startBtn.addEventListener(
+    "click",
+    StartGPS
+);
+
+// ============================================
+
+function StartGPS()
+{
+    if (!navigator.geolocation)
+    {
+        alert(
+            "Geolocation não suportado"
+        );
+
+        return;
+    }
+
+    statusEl.innerText =
+        "Iniciando GPS...";
+
+    watchId =
+        navigator.geolocation.watchPosition(
+            OnGPS,
+            OnError,
+            {
+                enableHighAccuracy: true,
+
+                maximumAge: 0,
+
+                timeout: 5000
+            }
+        );
+}
+
+// ============================================
+
+async function OnGPS(position)
+{
+    const lat =
+        position.coords.latitude;
+
+    const lon =
+        position.coords.longitude;
+
+    const accuracy =
+        position.coords.accuracy;
+
+    const speed =
+        position.coords.speed || 0;
+
+    const timestamp =
+        Date.now();
+
+    // ========================================
+
+    latEl.innerText =
+        lat.toFixed(8);
+
+    lonEl.innerText =
+        lon.toFixed(8);
+
+    accuracyEl.innerText =
+        accuracy.toFixed(2) + "m";
+
+    speedEl.innerText =
+        speed.toFixed(2) + " m/s";
+
+    timestampEl.innerText =
+        new Date(timestamp)
+            .toLocaleTimeString();
+
+    statusEl.innerText =
+        "GPS ativo";
+
+    // ========================================
+    // FIREBASE
+    // ========================================
+
+    try
+    {
+        await set(
+            ref(db, "kart/live"),
+            {
+                latitude: lat,
+                longitude: lon,
+                accuracy: accuracy,
+                speed: speed,
+                timestamp: timestamp
+            }
+        );
+    }
+    catch (e)
+    {
+        console.error(e);
+
+        statusEl.innerText =
+            "Erro Firebase";
+    }
+}
+
+// ============================================
+
+function OnError(error)
+{
+    console.error(error);
+
+    statusEl.innerText =
+        "Erro GPS: " + error.message;
+}
+
+</script>
+
+</body>
+</html>
